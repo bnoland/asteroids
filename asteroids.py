@@ -1,17 +1,85 @@
+import math
 import random
 import pygame
 from pygame.locals import *
 
 class Ship(pygame.sprite.Sprite):
-  def __init__(self):
+  def __init__(self, centerx, centery):
     pygame.sprite.Sprite.__init__(self)
     
+    # Set up the image.
+    image = pygame.Surface((30, 30))
+    triangle = ((0, 29), (14, 0), (29, 29))
+    pygame.draw.lines(image, (255, 255, 255), True, triangle, 1)
+    image = image.convert()
+    
+    # Used for determining if the ship is off the screen.
+    self.image = image
+    self.rect = self.image.get_rect(centerx=centerx, centery=centery)
+    
+    self.original = self.image
+    
+    screen = pygame.display.get_surface()
+    self.screen_rect = screen.get_rect()
+    
+    self.vx = self.vy = 0
+    self.ax = self.ay = 0
+    
+    self.angle = 0
+    self.spin = 0
+    
+  def start_turning_left(self):
+    self.spin = 5
+    
+  def start_turning_right(self):
+    self.spin = -5
+  
+  def stop_turning(self):
+    self.spin = 0
+  
+  def start_accelerating(self):
+    radians = math.radians(self.angle)
+    magnitude = 0.5
+    self.ax = magnitude * -math.sin(radians)
+    self.ay = magnitude * -math.cos(radians)
+  
+  def stop_accelerating(self):
+    self.ax = self.ay = 0
+  
   def update(self):
-    pass
+    # Handle linear movement.
+    self.vx += self.ax
+    self.vy += self.ay
+    
+    self.rect.move_ip(self.vx, self.vy)
+    
+    # Check if ship went off horizontal screen margins.
+    if self.rect.bottom < self.screen_rect.top:
+      self.rect.top = self.screen_rect.bottom
+    elif self.rect.top > self.screen_rect.bottom:
+      self.rect.bottom = self.screen_rect.top
+    
+    # Check if ship went off vertical screen margins.
+    if self.rect.right < self.screen_rect.left:
+      self.rect.left = self.screen_rect.right
+    elif self.rect.left > self.screen_rect.right:
+      self.rect.right = self.screen_rect.left
+    
+    # Handle turning.
+    if self.spin != 0:
+      self.angle += self.spin
+      if self.angle >= 360:
+        self.angle -= 360
+      
+      center = self.rect.center
+      self.image = pygame.transform.rotate(self.original, self.angle)
+      self.rect = self.image.get_rect(center=center)
 
 class Bullet(pygame.sprite.Sprite):
   def __init__(self):
     pygame.sprite.Sprite.__init__(self)
+    
+    
     
   def update(self):
     pass
@@ -52,7 +120,7 @@ class Asteroid(pygame.sprite.Sprite):
     self.rect = self.image.get_rect(center=center)
     
     self.angle += self.spin
-    if self.angle > 360:
+    if self.angle >= 360:
       self.angle -= 360
     
     # Handle linear movement.
@@ -121,12 +189,11 @@ def main():
   pygame.display.set_caption('Asteroids')
   
   clock = pygame.time.Clock()
-  sprites = pygame.sprite.RenderPlain()
+  
+  ship = Ship(299, 239)
+  sprites = pygame.sprite.RenderPlain((ship))
+  
   count = 0
-  
-  ast = Asteroid(150, 100, 80, 80)
-  sprites.add(ast)
-  
   while True:
     clock.tick(60)
     
@@ -134,11 +201,18 @@ def main():
     for event in pygame.event.get():
       if event.type == QUIT:
         return
-    
-    count += 1
-    if count == 3*60:
-      sprites.remove(ast)
-      sprites.add(ast.explode())
+      elif event.type == KEYDOWN:
+        if event.key == K_LEFT:
+          ship.start_turning_left()
+        elif event.key == K_RIGHT:
+          ship.start_turning_right()
+        elif event.key == K_UP:
+          ship.start_accelerating()
+      elif event.type == KEYUP:
+        if event.key == K_LEFT or event.key == K_RIGHT:
+          ship.stop_turning()
+        elif event.key == K_UP:
+          ship.stop_accelerating()
     
     """
     # Add a new asteroid every few frames.
