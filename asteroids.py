@@ -39,7 +39,7 @@ class Ship(pygame.sprite.Sprite):
   
   def start_accelerating(self):
     radians = math.radians(self.angle)
-    magnitude = 0.5
+    magnitude = 0.4
     self.ax = magnitude * -math.sin(radians)
     self.ay = magnitude * -math.cos(radians)
   
@@ -48,8 +48,14 @@ class Ship(pygame.sprite.Sprite):
   
   def update(self):
     # Handle linear movement.
+    
     self.vx += self.ax
     self.vy += self.ay
+    
+    # Drag force.
+    magnitude = 0.005
+    self.vx -= magnitude * self.vx
+    self.vy -= magnitude * self.vy
     
     self.rect.move_ip(self.vx, self.vy)
     
@@ -214,13 +220,11 @@ def main():
         elif event.key == K_UP:
           ship.stop_accelerating()
     
-    """
     # Add a new asteroid every few frames.
     count += 1
     if count == 60*5:
       add_random_asteroid(sprites, screen)
       count = 0
-    """
     
     sprites.update()
     
