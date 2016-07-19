@@ -60,26 +60,38 @@ class Asteroid(pygame.sprite.Sprite):
     
     # Check if asteroid went off horizontal screen margins.
     if self.rect.bottom < self.screen_rect.top:
-      #self.rect.move_ip(0, self.screen_rect.height)
       self.rect.top = self.screen_rect.bottom
     elif self.rect.top > self.screen_rect.bottom:
-      #self.rect.move_ip(0, -self.screen_rect.height)
       self.rect.bottom = self.screen_rect.top
     
     # Check if asteroid went off vertical screen margins.
     if self.rect.right < self.screen_rect.left:
-      #self.rect.move_ip(self.screen_rect.width, 0)
       self.rect.left = self.screen_rect.right
     elif self.rect.left > self.screen_rect.right:
-      #self.rect.move_ip(-self.screen_rect.width, 0)
       self.rect.right = self.screen_rect.left
 
-    def explode():
-      pass
+  def explode(self):
+    width = self.rect.w // 4
+    height = self.rect.h // 4
+    
+    # Don't allow really small asteroids.
+    if width < 10 or height < 10:
+      return ()
+    
+    x = self.rect.x
+    y = self.rect.y
+    
+    # Create the component asteroids.
+    ast1 = Asteroid(x, y, width, height)
+    ast2 = Asteroid(x + width, y, width, height)
+    ast3 = Asteroid(x, y + height, width, height)
+    ast4 = Asteroid(x + width, y + height, width, height)
+    
+    return (ast1, ast2, ast3, ast4)
 
-def add_asteroid(sprites, screen):
+def add_random_asteroid(sprites, screen):
   # Set up the asteroid dimensions.
-  width = height = random.randint(10, 30)
+  width = height = random.randint(10, 80)
   
   # Set up the asteroid's initial position (just off the screen).
   screen_rect = screen.get_rect()
@@ -112,6 +124,9 @@ def main():
   sprites = pygame.sprite.RenderPlain()
   count = 0
   
+  ast = Asteroid(150, 100, 80, 80)
+  sprites.add(ast)
+  
   while True:
     clock.tick(60)
     
@@ -120,11 +135,18 @@ def main():
       if event.type == QUIT:
         return
     
+    count += 1
+    if count == 3*60:
+      sprites.remove(ast)
+      sprites.add(ast.explode())
+    
+    """
     # Add a new asteroid every few frames.
     count += 1
     if count == 60*5:
-      add_asteroid(sprites, screen)
+      add_random_asteroid(sprites, screen)
       count = 0
+    """
     
     sprites.update()
     
