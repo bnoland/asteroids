@@ -13,14 +13,18 @@ class Ship(pygame.sprite.Sprite):
     pygame.draw.lines(image, (255, 255, 255), True, triangle, 1)
     image = image.convert()
     
-    # Used for determining if the ship is off the screen.
     self.image = image
     self.rect = self.image.get_rect(centerx=centerx, centery=centery)
     
     self.original = self.image
     
+    # Used for determining if the ship is off the screen.
     screen = pygame.display.get_surface()
     self.screen_rect = screen.get_rect()
+    
+    # Used to provide smooth movement.
+    self.x = self.rect.x
+    self.y = self.rect.y
     
     self.vx = self.vy = 0
     self.ax = self.ay = 0
@@ -47,6 +51,19 @@ class Ship(pygame.sprite.Sprite):
     self.ax = self.ay = 0
   
   def update(self):
+    # Handle turning.
+    if self.spin != 0:
+      self.angle += self.spin
+      if self.angle >= 360:
+        self.angle -= 360
+      
+      center = self.rect.center
+      self.image = pygame.transform.rotate(self.original, self.angle)
+      self.rect = self.image.get_rect(center=center)
+      
+      self.x = self.rect.x
+      self.y = self.rect.y
+    
     # Handle linear movement.
     
     self.vx += self.ax
@@ -57,38 +74,73 @@ class Ship(pygame.sprite.Sprite):
     self.vx -= magnitude * self.vx
     self.vy -= magnitude * self.vy
     
-    self.rect.move_ip(self.vx, self.vy)
+    self.x += self.vx
+    self.y += self.vy
+    self.rect.x = self.x
+    self.rect.y = self.y
     
     # Check if ship went off horizontal screen margins.
     if self.rect.bottom < self.screen_rect.top:
       self.rect.top = self.screen_rect.bottom
+      self.x = self.rect.x
+      self.y = self.rect.y
     elif self.rect.top > self.screen_rect.bottom:
       self.rect.bottom = self.screen_rect.top
+      self.x = self.rect.x
+      self.y = self.rect.y
     
     # Check if ship went off vertical screen margins.
     if self.rect.right < self.screen_rect.left:
       self.rect.left = self.screen_rect.right
+      self.x = self.rect.x
+      self.y = self.rect.y
     elif self.rect.left > self.screen_rect.right:
       self.rect.right = self.screen_rect.left
-    
-    # Handle turning.
-    if self.spin != 0:
-      self.angle += self.spin
-      if self.angle >= 360:
-        self.angle -= 360
-      
-      center = self.rect.center
-      self.image = pygame.transform.rotate(self.original, self.angle)
-      self.rect = self.image.get_rect(center=center)
+      self.x = self.rect.x
+      self.y = self.rect.y
+
+  def shoot(self):
+    centerx = self.rect.centerx
+    centery = self.rect.centery
+    bullet = Bullet(centerx, centery, self.angle)
+    return bullet
 
 class Bullet(pygame.sprite.Sprite):
-  def __init__(self):
+  def __init__(self, centerx, centery, angle):
     pygame.sprite.Sprite.__init__(self)
     
+    # Set up the image.
+    image = pygame.Surface((8, 8))
+    rect = image.get_rect()
+    pygame.draw.rect(image, (255, 255, 255), rect.inflate(-2, -2), 1)
+    image = pygame.transform.rotate(image, angle)
+    image = image.convert()
     
+    self.image = image
+    self.rect = image.get_rect(centerx=centerx, centery=centery)
+    
+    # Used for determining if the bullet is off the screen.
+    screen = pygame.display.get_surface()
+    self.screen_rect = screen.get_rect()
+    
+    # Used to provide smooth movement.
+    self.x = self.rect.x
+    self.y = self.rect.y
+    
+    # Set up the bullet's velocity.
+    radians = math.radians(angle)
+    magnitude = 5
+    self.vx = magnitude * -math.sin(radians)
+    self.vy = magnitude * -math.cos(radians)
     
   def update(self):
-    pass
+    self.x += self.vx
+    self.y += self.vy
+    self.rect.x = self.x
+    self.rect.y = self.y
+
+  def is_off_screen(self):
+    return not self.screen_rect.contains(self.rect)
 
 class Asteroid(pygame.sprite.Sprite):
   def __init__(self, x, y, width, height):
@@ -142,8 +194,8 @@ class Asteroid(pygame.sprite.Sprite):
     if self.rect.right < self.screen_rect.left:
       self.rect.left = self.screen_rect.right
     elif self.rect.left > self.screen_rect.right:
-      self.rect.right = self.screen_rect.left
-
+      self.rect.right = self.screen_rect.left  
+    
   def explode(self):
     width = self.rect.w // 4
     height = self.rect.h // 4
@@ -214,6 +266,8 @@ def main():
           ship.start_turning_right()
         elif event.key == K_UP:
           ship.start_accelerating()
+        elif event.key == K_LCTRL or event.key == K_RCTRL:
+          sprites.add(ship.shoot())
       elif event.type == KEYUP:
         if event.key == K_LEFT or event.key == K_RIGHT:
           ship.stop_turning()
