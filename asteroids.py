@@ -274,7 +274,9 @@ def main():
       if event.type == QUIT:
         return
       elif event.type == KEYDOWN:
-        if event.key == K_LEFT:
+        if event.key == K_ESCAPE:
+          return
+        elif event.key == K_LEFT:
           ship.start_turning_left()
         elif event.key == K_RIGHT:
           ship.start_turning_right()
