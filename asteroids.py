@@ -139,7 +139,7 @@ class Bullet(pygame.sprite.Sprite):
     self.rect.x = self.x
     self.rect.y = self.y
 
-  def is_off_screen(self):
+  def is_offscreen(self):
     return not self.screen_rect.contains(self.rect)
 
 class Asteroid(pygame.sprite.Sprite):
@@ -215,7 +215,7 @@ class Asteroid(pygame.sprite.Sprite):
     
     return (ast1, ast2, ast3, ast4)
 
-def add_random_asteroid(sprites, screen):
+def add_random_asteroid(asteroids, screen):
   # Set up the asteroid dimensions.
   width = height = random.randint(10, 80)
   
@@ -237,7 +237,15 @@ def add_random_asteroid(sprites, screen):
   
   # Create the new asteroid and add it to the sprite set.
   ast = Asteroid(x, y, width, height)
-  sprites.add(ast)
+  asteroids.add(ast)
+
+def remove_offscreen_bullets(bullets):
+  offscreen = []
+  for bullet in iter(bullets):
+    if bullet.is_offscreen():
+      offscreen.append(bullet)
+  
+  bullets.remove(offscreen)
   
 def main():
   pygame.init()
@@ -248,8 +256,14 @@ def main():
   
   clock = pygame.time.Clock()
   
+  # Player ship.
   ship = Ship(299, 239)
-  sprites = pygame.sprite.RenderPlain((ship))
+  
+  # Sprite groups.
+  # TODO: Handle player ship outside of a sprite group?
+  ships = pygame.sprite.RenderPlain((ship))
+  bullets = pygame.sprite.RenderPlain()
+  asteroids = pygame.sprite.RenderPlain()
   
   count = 0
   while True:
@@ -267,23 +281,44 @@ def main():
         elif event.key == K_UP:
           ship.start_accelerating()
         elif event.key == K_LCTRL or event.key == K_RCTRL:
-          sprites.add(ship.shoot())
+          if len(ships) > 0:  # Only fire if the ship is still alive.
+            bullets.add(ship.shoot())
       elif event.type == KEYUP:
         if event.key == K_LEFT or event.key == K_RIGHT:
           ship.stop_turning()
         elif event.key == K_UP:
           ship.stop_accelerating()
     
+    remove_offscreen_bullets(bullets)
+    
     # Add a new asteroid every few frames.
     count += 1
     if count == 60*5:
-      add_random_asteroid(sprites, screen)
+      add_random_asteroid(asteroids, screen)
       count = 0
     
-    sprites.update()
+    # Explode the asteroids hit by any bullets.
+    dead_asteroids = pygame.sprite.groupcollide(asteroids, bullets, True, True)
+    for ast in dead_asteroids:
+      asteroids.add(ast.explode())
+    
+    # If any asteroids hit the ship, explode them and destroy the ship.
+    dead_asteroids = pygame.sprite.groupcollide(asteroids, ships, True, True)
+    if len(dead_asteroids) > 0:
+      ships.remove(ship)
+    for ast in dead_asteroids:
+      asteroids.add(ast.explode())
+    
+    ships.update()
+    bullets.update()
+    asteroids.update()
     
     screen.fill((0, 0, 0))
-    sprites.draw(screen)
+    
+    bullets.draw(screen)  # Want bullets below ship.
+    ships.draw(screen)
+    asteroids.draw(screen)
+    
     pygame.display.flip()
     
 if __name__ == '__main__':
