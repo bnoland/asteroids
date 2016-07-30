@@ -1,3 +1,8 @@
+""" asteroids.py
+
+A simple Asteroids-type game, made using pygame. """
+
+import sys
 import math
 import random
 import pygame
@@ -17,8 +22,10 @@ class Ship(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         
         # Set up the image.
-        image = pygame.Surface((30, 30))
-        triangle = ((0, 29), (14, 0), (29, 29))
+        width = 30
+        height = 40
+        image = pygame.Surface((width, height))
+        triangle = ((0, height - 1), (width // 2 - 1, 0), (width - 1, height - 1))
         pygame.draw.lines(image, WHITE, True, triangle, 1)
         image = image.convert()
         
@@ -100,23 +107,19 @@ class Ship(pygame.sprite.Sprite):
         self.rect.x = self.x
         self.rect.y = self.y
         
-        # Check if ship went off horizontal screen margins.
-        if self.rect.bottom < self.screen_rect.top:
-            self.rect.top = self.screen_rect.bottom
-            self.x = self.rect.x
-            self.y = self.rect.y
-        elif self.rect.top > self.screen_rect.bottom:
-            self.rect.bottom = self.screen_rect.top
-            self.x = self.rect.x
-            self.y = self.rect.y
-        
-        # Check if ship went off vertical screen margins.
-        if self.rect.right < self.screen_rect.left:
-            self.rect.left = self.screen_rect.right
-            self.x = self.rect.x
-            self.y = self.rect.y
-        elif self.rect.left > self.screen_rect.right:
-            self.rect.right = self.screen_rect.left
+        if not self.screen_rect.contains(self.rect):
+            # Check if ship went off horizontal screen margins.
+            if self.rect.bottom < self.screen_rect.top:
+                self.rect.top = self.screen_rect.bottom
+            elif self.rect.top > self.screen_rect.bottom:
+                self.rect.bottom = self.screen_rect.top
+            
+            # Check if ship went off vertical screen margins.
+            if self.rect.right < self.screen_rect.left:
+                self.rect.left = self.screen_rect.right
+            elif self.rect.left > self.screen_rect.right:
+                self.rect.right = self.screen_rect.left
+            
             self.x = self.rect.x
             self.y = self.rect.y
 
@@ -265,16 +268,16 @@ def add_random_asteroid(asteroids):
     
     # Set up the asteroid's initial position (just off the screen).
     side = random.randint(0, 3)
-    if side == 0:       # Left side.
+    if side == 0:   # Left side.
         x = -width
         y = random.randint(0, screen_rect.height)
-    elif side == 1:     # Bottom side.
+    elif side == 1: # Bottom side.
         x = random.randint(0, screen_rect.width)
         y = screen_rect.height
-    elif side == 2:     # Right side.
+    elif side == 2: # Right side.
         x = screen_rect.width
         y = random.randint(0, screen_rect.height)
-    elif side == 3:     # Top side.
+    elif side == 3: # Top side.
         x = random.randint(0, screen_rect.width)
         y = -height
     
@@ -293,6 +296,10 @@ def remove_offscreen_bullets(bullets):
     bullets.remove(offscreen)
     
 def main():
+    if not pygame.font:
+        print('Error: pygame font module unavailable.', file=sys.stderr)
+        sys.exit(1)
+    
     pygame.init()
     
     # Initialize the display surface.
@@ -304,6 +311,9 @@ def main():
     # Put the player ship at the center of the screen.
     screen_rect = screen.get_rect()
     ship = Ship(screen_rect.centerx, screen_rect.centery)
+    
+    font = pygame.font.Font(None, 36)   # Font for score display.
+    score = 0                           # Player score.
     
     # Sprite groups.
     ships = pygame.sprite.RenderPlain((ship))
@@ -338,27 +348,32 @@ def main():
         
         remove_offscreen_bullets(bullets)
         
-        # Add a new asteroid every few frames.
-        count += 1
-        if count == 60*5:
-            add_random_asteroid(asteroids)
-            count = 0
+        # If the ship isn't dead, add a new asteroid every few frames.
+        if len(ships) > 0:
+            count += 1
+            if count == 60*5:
+                add_random_asteroid(asteroids)
+                count = 0
         
-        # Explode the asteroids hit by any bullets.
+        # Explode the asteroids hit by any bullets and update the player score.
         dead_asteroids = pygame.sprite.groupcollide(asteroids, bullets, True, True)
+        score += len(dead_asteroids)
         for ast in dead_asteroids:
             asteroids.add(ast.explode())
         
         # If any asteroids hit the ship, explode them and destroy the ship.
         dead_asteroids = pygame.sprite.groupcollide(asteroids, ships, True, True)
-        if len(dead_asteroids) > 0:
+        if len(dead_asteroids) > 0: # Any asteroids hitting the ship?
             ships.remove(ship)
         for ast in dead_asteroids:
             asteroids.add(ast.explode())
         
+        # Update the sprites.
         ships.update()
         bullets.update()
         asteroids.update()
+        
+        # Redraw the screen.
         
         screen.fill(BLACK)
         
@@ -366,6 +381,11 @@ def main():
         ships.draw(screen)
         asteroids.draw(screen)
         
+        # Update the score display.
+        score_display = font.render('Score: ' + str(score), True, WHITE)
+        screen.blit(score_display, (0, 0))
+        
+        # Display the changes.
         pygame.display.flip()
         
 if __name__ == '__main__':
