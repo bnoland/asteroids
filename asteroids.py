@@ -3,14 +3,23 @@ import random
 import pygame
 from pygame.locals import *
 
+# Some useful color constants.
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+YELLOW = (255, 255, 0)
+
 class Ship(pygame.sprite.Sprite):
+    """ Represents the player ship. """
+    
     def __init__(self, centerx, centery):
+        """ Constructor. """
+        
         pygame.sprite.Sprite.__init__(self)
         
         # Set up the image.
         image = pygame.Surface((30, 30))
         triangle = ((0, 29), (14, 0), (29, 29))
-        pygame.draw.lines(image, (255, 255, 255), True, triangle, 1)
+        pygame.draw.lines(image, WHITE, True, triangle, 1)
         image = image.convert()
         
         self.image = image
@@ -33,24 +42,36 @@ class Ship(pygame.sprite.Sprite):
         self.spin = 0
         
     def start_turning_left(self):
+        """ Start turning the ship left on updates. """
+        
         self.spin = 5
         
     def start_turning_right(self):
+        """ Start turning the ship right on updates. """
+        
         self.spin = -5
     
     def stop_turning(self):
+        """ Stop turning the ship on updates. """
+        
         self.spin = 0
     
     def start_accelerating(self):
+        """ Start accelerating the ship on updates. """
+        
         radians = math.radians(self.angle)
         magnitude = 0.4
         self.ax = magnitude * -math.sin(radians)
         self.ay = magnitude * -math.cos(radians)
     
     def stop_accelerating(self):
+        """ Stop accelerating the ship on updates. """
+        
         self.ax = self.ay = 0
     
     def update(self):
+        """ Update the ship's state. """
+        
         # Handle turning.
         if self.spin != 0:
             self.angle += self.spin
@@ -100,19 +121,23 @@ class Ship(pygame.sprite.Sprite):
             self.y = self.rect.y
 
     def shoot(self):
-        centerx = self.rect.centerx
-        centery = self.rect.centery
-        bullet = Bullet(centerx, centery, self.angle)
+        """ Return a bullet fired by the ship. """
+        
+        bullet = Bullet(self.rect.centerx, self.rect.centery, self.angle)
         return bullet
 
 class Bullet(pygame.sprite.Sprite):
+    """ Represents a bullet fired by the player ship. """
+    
     def __init__(self, centerx, centery, angle):
+        """ Constructor. """
+        
         pygame.sprite.Sprite.__init__(self)
         
         # Set up the image.
         image = pygame.Surface((8, 8))
         rect = image.get_rect()
-        pygame.draw.rect(image, (255, 255, 255), rect.inflate(-2, -2), 1)
+        pygame.draw.rect(image, YELLOW, rect.inflate(-2, -2), 1)
         image = pygame.transform.rotate(image, angle)
         image = image.convert()
         
@@ -134,22 +159,30 @@ class Bullet(pygame.sprite.Sprite):
         self.vy = magnitude * -math.cos(radians)
         
     def update(self):
+        """ Update the bullet's state. """
+        
         self.x += self.vx
         self.y += self.vy
         self.rect.x = self.x
         self.rect.y = self.y
 
     def is_offscreen(self):
+        """ Is the bullet offscreen? """
+        
         return not self.screen_rect.contains(self.rect)
 
 class Asteroid(pygame.sprite.Sprite):
+    """ Represents an asteroid. """
+    
     def __init__(self, x, y, width, height):
+        """ Constructor. """
+        
         pygame.sprite.Sprite.__init__(self)
         
         # Set up the image.
         image = pygame.Surface((width, height))
         rect = image.get_rect()
-        pygame.draw.rect(image, (255, 255, 255), rect.inflate(-2, -2), 1)
+        pygame.draw.rect(image, WHITE, rect.inflate(-2, -2), 1)
         image = image.convert()
         
         self.image = image
@@ -172,6 +205,8 @@ class Asteroid(pygame.sprite.Sprite):
         self.spin = random.random() * 5
         
     def update(self):
+        """ Update the asteroid's state. """
+        
         # Handle rotation.
         center = self.rect.center
         self.image = pygame.transform.rotate(self.original, self.angle)
@@ -197,11 +232,14 @@ class Asteroid(pygame.sprite.Sprite):
             self.rect.right = self.screen_rect.left  
         
     def explode(self):
+        """ Return the new asteroids that result from this asteroid exploding. """
+        
         width = self.rect.w // 4
         height = self.rect.h // 4
         
         # Don't allow really small asteroids.
-        if width < 10 or height < 10:
+        min_width = min_height = 11
+        if width < min_width or height < min_height:
             return ()
         
         x = self.rect.x
@@ -215,23 +253,28 @@ class Asteroid(pygame.sprite.Sprite):
         
         return (ast1, ast2, ast3, ast4)
 
-def add_random_asteroid(asteroids, screen):
+def add_random_asteroid(asteroids):
+    """ Add a randomly generated asteroid to the arena. The asteroid will enter from the edge of
+    the screen. """
+    
+    screen = pygame.display.get_surface()
+    screen_rect = screen.get_rect()
+    
     # Set up the asteroid dimensions.
     width = height = random.randint(10, 80)
     
     # Set up the asteroid's initial position (just off the screen).
-    screen_rect = screen.get_rect()
     side = random.randint(0, 3)
     if side == 0:       # Left side.
         x = -width
         y = random.randint(0, screen_rect.height)
-    elif side == 1: # Bottom side.
+    elif side == 1:     # Bottom side.
         x = random.randint(0, screen_rect.width)
         y = screen_rect.height
-    elif side == 2: # Right side.
+    elif side == 2:     # Right side.
         x = screen_rect.width
         y = random.randint(0, screen_rect.height)
-    elif side == 3: # Top side.
+    elif side == 3:     # Top side.
         x = random.randint(0, screen_rect.width)
         y = -height
     
@@ -240,6 +283,8 @@ def add_random_asteroid(asteroids, screen):
     asteroids.add(ast)
 
 def remove_offscreen_bullets(bullets):
+    """ Remove any bullets that have drifted offscreen. """
+    
     offscreen = []
     for bullet in iter(bullets):
         if bullet.is_offscreen():
@@ -256,11 +301,11 @@ def main():
     
     clock = pygame.time.Clock()
     
-    # Player ship.
-    ship = Ship(299, 239)
+    # Put the player ship at the center of the screen.
+    screen_rect = screen.get_rect()
+    ship = Ship(screen_rect.centerx, screen_rect.centery)
     
     # Sprite groups.
-    # TODO: Handle player ship outside of a sprite group?
     ships = pygame.sprite.RenderPlain((ship))
     bullets = pygame.sprite.RenderPlain()
     asteroids = pygame.sprite.RenderPlain()
@@ -296,7 +341,7 @@ def main():
         # Add a new asteroid every few frames.
         count += 1
         if count == 60*5:
-            add_random_asteroid(asteroids, screen)
+            add_random_asteroid(asteroids)
             count = 0
         
         # Explode the asteroids hit by any bullets.
@@ -315,7 +360,7 @@ def main():
         bullets.update()
         asteroids.update()
         
-        screen.fill((0, 0, 0))
+        screen.fill(BLACK)
         
         bullets.draw(screen)    # Want bullets below ship.
         ships.draw(screen)
