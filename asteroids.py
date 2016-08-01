@@ -241,7 +241,7 @@ class Asteroid(pygame.sprite.Sprite):
         height = self.rect.h // 4
         
         # Don't allow really small asteroids.
-        min_width = min_height = 11
+        min_width = min_height = 10
         if width < min_width or height < min_height:
             return ()
         
