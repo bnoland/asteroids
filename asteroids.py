@@ -7,6 +7,7 @@ import math
 import random
 import pygame
 from pygame.locals import *
+from pgu import gui
 
 # Some useful color constants.
 BLACK = (0, 0, 0)
@@ -256,45 +257,26 @@ class Asteroid(pygame.sprite.Sprite):
         
         return (ast1, ast2, ast3, ast4)
 
-def add_random_asteroid(asteroids):
-    """ Add a randomly generated asteroid to the arena. The asteroid will enter from the edge of
-    the screen. """
+class GameOverScreen(gui.Table):
+    """ Represents the game over screen, to be shown when the player ship is killed. """
     
-    screen = pygame.display.get_surface()
-    screen_rect = screen.get_rect()
-    
-    # Set up the asteroid dimensions.
-    width = height = random.randint(10, 80)
-    
-    # Set up the asteroid's initial position (just off the screen).
-    side = random.randint(0, 3)
-    if side == 0:   # Left side.
-        x = -width
-        y = random.randint(0, screen_rect.height)
-    elif side == 1: # Bottom side.
-        x = random.randint(0, screen_rect.width)
-        y = screen_rect.height
-    elif side == 2: # Right side.
-        x = screen_rect.width
-        y = random.randint(0, screen_rect.height)
-    elif side == 3: # Top side.
-        x = random.randint(0, screen_rect.width)
-        y = -height
-    
-    # Create the new asteroid and add it to the sprite set.
-    ast = Asteroid(x, y, width, height)
-    asteroids.add(ast)
+    def __init__(self):
+        """ Constructor. """
+        
+        gui.Table.__init__(self)
+        
+        self.input = gui.Input()
+        self.submit = gui.Button('Submit')
+        
+        self.tr()
+        self.td(self.input)
+        self.td(self.submit)
 
-def remove_offscreen_bullets(bullets):
-    """ Remove any bullets that have drifted offscreen. """
+class Game:
+    """ Represents a game instance. """
     
-    offscreen = []
-    for bullet in iter(bullets):
-        if bullet.is_offscreen():
-            offscreen.append(bullet)
-    
-    bullets.remove(offscreen)
-    
+    pass
+
 def main():
     if not pygame.font:
         print('Error: pygame font module unavailable.', file=sys.stderr)
@@ -320,6 +302,55 @@ def main():
     bullets = pygame.sprite.RenderPlain()
     asteroids = pygame.sprite.RenderPlain()
     
+    # Set up the stuff for managing the game over screen.
+    gui_app = gui.App()
+    game_over_screen = GameOverScreen()
+    gui_app.init(game_over_screen)
+    
+    def game_over():
+        """ Is the game over? """
+        
+        return len(ships) == 0 and len(bullets) == 0
+    
+    def add_random_asteroid():
+        """ Add a randomly generated asteroid to the arena. The asteroid will enter from the edge of
+        the screen. """
+        
+        screen = pygame.display.get_surface()
+        screen_rect = screen.get_rect()
+        
+        # Set up the asteroid dimensions.
+        width = height = random.randint(10, 80)
+        
+        # Set up the asteroid's initial position (just off the screen).
+        side = random.randint(0, 3)
+        if side == 0:   # Left side.
+            x = -width
+            y = random.randint(0, screen_rect.height)
+        elif side == 1: # Bottom side.
+            x = random.randint(0, screen_rect.width)
+            y = screen_rect.height
+        elif side == 2: # Right side.
+            x = screen_rect.width
+            y = random.randint(0, screen_rect.height)
+        elif side == 3: # Top side.
+            x = random.randint(0, screen_rect.width)
+            y = -height
+        
+        # Create the new asteroid and add it to the sprite set.
+        ast = Asteroid(x, y, width, height)
+        asteroids.add(ast)
+
+    def remove_offscreen_bullets():
+        """ Remove any bullets that have drifted offscreen. """
+        
+        offscreen = []
+        for bullet in iter(bullets):
+            if bullet.is_offscreen():
+                offscreen.append(bullet)
+        
+        bullets.remove(offscreen)
+    
     count = 0
     while True:
         clock.tick(60)
@@ -328,6 +359,10 @@ def main():
         for event in pygame.event.get():
             if event.type == QUIT:
                 return
+            
+            elif game_over():
+                gui_app.event(event)
+            
             elif event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
                     return
@@ -338,33 +373,43 @@ def main():
                 elif event.key == K_UP:
                     ship.start_accelerating()
                 elif event.key == K_LCTRL or event.key == K_RCTRL:
-                    if len(ships) > 0:  # Only fire if the ship is still alive.
+                    # Fire a bullet if the ship is still alive.
+                    if len(ships) > 0:
                         bullets.add(ship.shoot())
+            
             elif event.type == KEYUP:
                 if event.key == K_LEFT or event.key == K_RIGHT:
                     ship.stop_turning()
                 elif event.key == K_UP:
                     ship.stop_accelerating()
         
-        remove_offscreen_bullets(bullets)
+        remove_offscreen_bullets()
         
         # If the ship isn't dead, add a new asteroid every few frames.
         if len(ships) > 0:
             count += 1
             if count == 60*5:
-                add_random_asteroid(asteroids)
+                add_random_asteroid()
                 count = 0
         
         # Explode the asteroids hit by any bullets and update the player score.
         dead_asteroids = pygame.sprite.groupcollide(asteroids, bullets, True, True)
+        
+        # Update the score and score display.
         score += len(dead_asteroids)
+        score_display = font.render('Score: ' + str(score), True, WHITE)
+        
         for ast in dead_asteroids:
             asteroids.add(ast.explode())
         
         # If any asteroids hit the ship, explode them and destroy the ship.
         dead_asteroids = pygame.sprite.groupcollide(asteroids, ships, True, True)
-        if len(dead_asteroids) > 0: # Any asteroids hitting the ship?
+        
+        # Any asteroids hitting the ship?
+        if len(dead_asteroids) > 0:
+            # Kill the ship.
             ships.remove(ship)
+            
         for ast in dead_asteroids:
             asteroids.add(ast.explode())
         
@@ -381,9 +426,11 @@ def main():
         ships.draw(screen)
         asteroids.draw(screen)
         
-        # Update the score display.
-        score_display = font.render('Score: ' + str(score), True, WHITE)
+        # Show the score display.
         screen.blit(score_display, (0, 0))
+        
+        if len(ships) == 0 and len(bullets) == 0:
+            gui_app.paint()
         
         # Display the changes.
         pygame.display.flip()
