@@ -260,17 +260,26 @@ class Asteroid(pygame.sprite.Sprite):
 class GameOverScreen(gui.Table):
     """ Represents the game over screen, to be shown when the player ship is killed. """
     
-    def __init__(self):
+    def __init__(self, game):
         """ Constructor. """
         
         gui.Table.__init__(self)
         
+        self.game = game
+        
         self.input = gui.Input()
         self.submit = gui.Button('Submit')
         
+        self.input.connect('activate', self._submit_score)
+        self.submit.connect(gui.CLICK, self._submit_score)
+        
         self.tr()
+        self.td(gui.Label('Name: ', color=WHITE))
         self.td(self.input)
         self.td(self.submit)
+        
+    def _submit_score(self):
+        self.game.start_new()
 
 class Game:
     """ Class to manage game functionality. """
@@ -307,6 +316,11 @@ class Game:
         """ Is the game over? """
         
         return len(self.ships) == 0 and len(self.bullets) == 0
+    
+    def get_score(self):
+        """ Returns the current player score. """
+        
+        return self.score
     
     def _add_random_asteroid(self):
         """ Add a randomly generated asteroid to the screen. The asteroid will enter from the edge
@@ -418,6 +432,7 @@ class Game:
         self.screen.blit(self.score_display, (0, 0))
     
 def main():
+    # Give a warning if the pygame font module is unavailable.
     if not pygame.font:
         print('Error: pygame font module unavailable.', file=sys.stderr)
         sys.exit(1)
@@ -430,26 +445,34 @@ def main():
     
     clock = pygame.time.Clock()
     
-    # Set up the stuff for managing the game over screen.
-    #gui_app = gui.App()
-    #game_over_screen = GameOverScreen()
-    #gui_app.init(game_over_screen)
-    
+    # Set up a new game.
     game = Game()
     game.start_new()
+    
+    # Set up the stuff for managing the game over screen.
+    gui_app = gui.App()
+    game_over_screen = GameOverScreen(game)
+    gui_app.init(game_over_screen)
     
     while True:
         clock.tick(60)
         
+        # Process the event queue.
         for ev in pygame.event.get():
             if ev.type == QUIT:
                 return
+            elif game.is_over():
+                gui_app.event(ev)
             else:
                 game.event(ev)
         
         game.update()
         game.draw()
         
+        if game.is_over():
+            gui_app.paint()
+        
+        # Display the changes to the screen.
         pygame.display.flip()
     
 if __name__ == '__main__':
