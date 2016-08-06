@@ -278,9 +278,14 @@ class GameOverScreen(gui.Table):
         self.td(self.input)
         self.td(self.submit)
         
+        self.input.focus()
+        
     def _submit_score(self):
         self.game.start_new()
-
+        
+        # Ensure that the input box is focused for next time.
+        self.input.focus()
+    
 class Game:
     """ Class to manage game functionality. """
     
@@ -461,6 +466,10 @@ def main():
         for ev in pygame.event.get():
             if ev.type == QUIT:
                 return
+            elif ev.type == KEYDOWN and ev.key == K_ESCAPE:
+                return
+            elif ev.type == KEYDOWN and ev.key == K_F1:
+                game.start_new()
             elif game.is_over():
                 gui_app.event(ev)
             else:
