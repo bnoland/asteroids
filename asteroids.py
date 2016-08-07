@@ -13,6 +13,7 @@ from pgu import gui
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 YELLOW = (255, 255, 0)
+RED = (255, 0, 0)
 
 class Ship(pygame.sprite.Sprite):
     """ Represents the player ship. """
@@ -22,18 +23,32 @@ class Ship(pygame.sprite.Sprite):
         
         pygame.sprite.Sprite.__init__(self)
         
-        # Set up the image.
-        width = 30
-        height = 40
-        image = pygame.Surface((width, height))
-        triangle = ((0, height - 1), (width // 2 - 1, 0), (width - 1, height - 1))
-        pygame.draw.lines(image, WHITE, True, triangle, 1)
-        image = image.convert()
+        ship_width, ship_height = 30, 40
+        flame_width, flame_height = 10, 5
         
-        self.image = image
+        # Set up the non-accelerating ship image.
+        
+        self.non_accel_image = pygame.Surface((ship_width, ship_height + flame_height))
+        ship = ((0, ship_height - 1), (ship_width // 2 - 1, 0), (ship_width - 1, ship_height - 1))
+        pygame.draw.lines(self.non_accel_image, WHITE, True, ship, 1)
+        self.non_accel_image = self.non_accel_image.convert()
+        
+        # Set up the accelerating ship image (the non-accelerating image plus a booster flame).
+        
+        flame = (((ship_width - flame_width) // 2 - 1, ship_height - 1),
+                  (ship_width // 2 - 1, ship_height + flame_height - 1),
+                  (ship_width - (ship_width - flame_width) // 2 - 1, ship_height - 1))
+        
+        self.accel_image = pygame.Surface((ship_width, ship_height + flame_height))
+        self.accel_image.blit(self.non_accel_image, (0, 0))
+        pygame.draw.lines(self.accel_image, RED, False, flame, 1)
+        self.accel_image = self.accel_image.convert()
+        
+        # The ship isn't accelerating to begin with.
+        self.image = self.non_accel_image
         self.rect = self.image.get_rect(centerx=centerx, centery=centery)
         
-        self.original = self.image
+        self.orig_image = self.image
         
         # Used for determining if the ship is off the screen.
         screen = pygame.display.get_surface()
@@ -71,25 +86,30 @@ class Ship(pygame.sprite.Sprite):
         magnitude = 0.4
         self.ax = magnitude * -math.sin(radians)
         self.ay = magnitude * -math.cos(radians)
-    
+        
+        self.orig_image = self.accel_image
+        
     def stop_accelerating(self):
         """ Stop accelerating the ship on updates. """
         
         self.ax = self.ay = 0
-    
+        
+        self.orig_image = self.non_accel_image
+        
     def update(self):
         """ Update the ship's state. """
         
         # Handle turning.
+        self.angle += self.spin
+        if self.angle >= 360:
+            self.angle -= 360
+        
+        center = self.rect.center
+        self.image = pygame.transform.rotate(self.orig_image, self.angle)
+        self.rect = self.image.get_rect(center=center)
+        
         if self.spin != 0:
-            self.angle += self.spin
-            if self.angle >= 360:
-                self.angle -= 360
-            
-            center = self.rect.center
-            self.image = pygame.transform.rotate(self.original, self.angle)
-            self.rect = self.image.get_rect(center=center)
-            
+            # The ship actually turned, so update its coordinates.
             self.x = self.rect.x
             self.y = self.rect.y
         
@@ -192,7 +212,7 @@ class Asteroid(pygame.sprite.Sprite):
         self.image = image
         self.rect = self.image.get_rect(x=x, y=y)
         
-        self.original = self.image
+        self.orig_image = self.image
         
         # Used for determining if the asteroid is off the screen.
         screen = pygame.display.get_surface()
@@ -213,7 +233,7 @@ class Asteroid(pygame.sprite.Sprite):
         
         # Handle rotation.
         center = self.rect.center
-        self.image = pygame.transform.rotate(self.original, self.angle)
+        self.image = pygame.transform.rotate(self.orig_image, self.angle)
         self.rect = self.image.get_rect(center=center)
         
         self.angle += self.spin
