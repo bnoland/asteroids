@@ -232,13 +232,14 @@ class Asteroid(pygame.sprite.Sprite):
         """ Update the asteroid's state. """
         
         # Handle rotation.
-        center = self.rect.center
-        self.image = pygame.transform.rotate(self.orig_image, self.angle)
-        self.rect = self.image.get_rect(center=center)
         
         self.angle += self.spin
         if self.angle >= 360:
             self.angle -= 360
+        
+        center = self.rect.center
+        self.image = pygame.transform.rotate(self.orig_image, self.angle)
+        self.rect = self.image.get_rect(center=center)
         
         # Handle linear movement.
         self.rect.move_ip(self.vx, self.vy)
