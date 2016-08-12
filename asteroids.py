@@ -5,6 +5,7 @@ A simple Asteroids-type game, made using pygame. """
 import sys
 import math
 import random
+import os.path
 import pygame
 from pygame.locals import *
 from pgu import gui
@@ -361,6 +362,7 @@ class GameOverScreen(gui.Table):
         
         gui.Table.__init__(self)
         self.game = game
+        self.highscore_file = 'highscores'
         
         # Set up the input box and the submit button.
         
@@ -370,9 +372,13 @@ class GameOverScreen(gui.Table):
         self.input.connect('activate', self._submit_score)
         self.submit.connect(gui.CLICK, self._submit_score)
         
-        # Read the high score list into a score board structure.
+        # Create high score file if it doesn't exist.
+        if not os.path.isfile(self.highscore_file):
+            with open(self.highscore_file, 'w') as f:
+                pass
         
-        self.score_board = ScoreBoard(5, 'highscores')
+        # Read the high score list into a score board structure.
+        self.score_board = ScoreBoard(5, self.highscore_file)
         
         # Define the layout.
         
@@ -388,13 +394,11 @@ class GameOverScreen(gui.Table):
         
     def _submit_score(self):
         
-        # TODO: Save the score and write the new high score list to disk.
-        
         name = self.input.value
         score = self.game.get_score()
         
         self.score_board.add_entry(name, score)
-        self.score_board.write('highscores')
+        self.score_board.write(self.highscore_file)
         
         self.game.start_new()
         
@@ -549,7 +553,7 @@ class Game:
         self.asteroids.draw(self.screen)
         
         # Show the score display.
-        self.screen.blit(self.score_display, (0, 0))
+        self.screen.blit(self.score_display, (5, 5))
     
 def main():
     # Give a warning if the pygame font module is unavailable.
