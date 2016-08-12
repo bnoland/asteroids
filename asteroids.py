@@ -278,6 +278,81 @@ class Asteroid(pygame.sprite.Sprite):
         
         return (ast1, ast2, ast3, ast4)
 
+class ScoreBoard(gui.Table):
+    """ A table for displaying player names and associated scores. """
+    
+    class Entry:
+        """ An entry in the score board. """
+        
+        def __init__(self, name, score):
+            """ Constructor. """
+            
+            self.name = name
+            self.score = score
+        
+        def compare(self):
+            """ Return the value by which to compare entries. """
+            
+            return self.score
+        
+    def __init__(self, max_entries, filename=None):
+        """ Constructor. """
+        
+        gui.Table.__init__(self)
+        self.entries = []
+        self.max_entries = max_entries
+        
+        # If a filename is given, initialize the scoreboard with the contents of that file.
+        if filename:
+            with open(filename, 'r') as f:
+                lines = f.readlines()
+                for line in lines[:self.max_entries]:
+                    tokens = line.split('\t')
+                    name, score = tokens[0], int(tokens[1])
+                    self._add_entry_no_update(name, score)
+        
+        self._update()
+        
+    def _add_entry_no_update(self, name, score):
+        """ Add a player name and their score to this score board, without updating the score
+        board display. """
+        
+        # Add the new entry.
+        entry = self.Entry(name, score)
+        self.entries.append(entry)
+        
+        # Sort the entries.
+        self.entries.sort(key=self.Entry.compare, reverse=True)
+        
+        # Only save the top few entries.
+        self.entries = self.entries[:self.max_entries]
+        
+    def _update(self):
+        """ Update the score board display. """
+        
+        # Clear the old display.
+        self.clear()
+        
+        # Make the display reflect the current entries.
+        # TODO: Formatting.
+        for entry in self.entries:
+            self.tr()
+            self.td(gui.Label(entry.name, color=WHITE))
+            self.td(gui.Label(str(entry.score), color=WHITE))
+        
+    def add_entry(self, name, score):
+        """ Add a player name and their score to this score board. """
+        
+        self._add_entry_no_update(name, score)
+        self._update()
+    
+    def write(self, filename):
+        """ Write the score board to a file. """
+        
+        with open(filename, 'w') as f:
+            for entry in self.entries:
+                f.write(entry.name + '\t' + str(entry.score) + '\n')
+    
 class GameOverScreen(gui.Table):
     """ Represents the game over screen, to be shown when the player ship is killed. """
     
@@ -285,8 +360,9 @@ class GameOverScreen(gui.Table):
         """ Constructor. """
         
         gui.Table.__init__(self)
-        
         self.game = game
+        
+        # Set up the input box and the submit button.
         
         self.input = gui.Input()
         self.submit = gui.Button('Submit')
@@ -294,14 +370,32 @@ class GameOverScreen(gui.Table):
         self.input.connect('activate', self._submit_score)
         self.submit.connect(gui.CLICK, self._submit_score)
         
+        # Read the high score list into a score board structure.
+        
+        self.score_board = ScoreBoard(5, 'highscores')
+        
+        # Define the layout.
+        
+        self.tr()
+        self.td(self.score_board)
         self.tr()
         self.td(gui.Label('Name: ', color=WHITE))
         self.td(self.input)
         self.td(self.submit)
         
+        # Ensure that the input box is focused.
         self.input.focus()
         
     def _submit_score(self):
+        
+        # TODO: Save the score and write the new high score list to disk.
+        
+        name = self.input.value
+        score = self.game.get_score()
+        
+        self.score_board.add_entry(name, score)
+        self.score_board.write('highscores')
+        
         self.game.start_new()
         
         # Ensure that the input box is focused for next time.
