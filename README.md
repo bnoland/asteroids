@@ -1,4 +1,3 @@
-An Asteroids-like game. Made using pygame.
+A simple Asteroids-like game, made using pygame and pgu.
 
-It's quite rough as of now. It needs to be more user-friendly and the code needs
-some cleaning up.
+Use the arrow keys to control the ship and ctrl to shoot. Hit F1 at any time to start a new game.

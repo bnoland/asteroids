@@ -29,8 +29,11 @@ class Ship(pygame.sprite.Sprite):
         
         # Set up the non-accelerating ship image.
         
+        ship = ((0, ship_height - 1),
+                (ship_width // 2 - 1, 0),
+                (ship_width - 1, ship_height - 1))
+        
         self.non_accel_image = pygame.Surface((ship_width, ship_height + flame_height))
-        ship = ((0, ship_height - 1), (ship_width // 2 - 1, 0), (ship_width - 1, ship_height - 1))
         pygame.draw.lines(self.non_accel_image, WHITE, True, ship, 1)
         self.non_accel_image = self.non_accel_image.convert()
         
@@ -45,10 +48,9 @@ class Ship(pygame.sprite.Sprite):
         pygame.draw.lines(self.accel_image, RED, False, flame, 1)
         self.accel_image = self.accel_image.convert()
         
-        # The ship isn't accelerating to begin with.
+        # Set up the initial ship image and bounding rectangle.
         self.image = self.non_accel_image
         self.rect = self.image.get_rect(centerx=centerx, centery=centery)
-        
         self.orig_image = self.image
         
         # Used for determining if the ship is off the screen.
@@ -59,9 +61,11 @@ class Ship(pygame.sprite.Sprite):
         self.x = self.rect.x
         self.y = self.rect.y
         
+        # Initial velocity and acceleration components.
         self.vx = self.vy = 0
         self.ax = self.ay = 0
         
+        # Initial angle and angular velocity (spin).
         self.angle = 0
         self.spin = 0
         
@@ -101,6 +105,7 @@ class Ship(pygame.sprite.Sprite):
         """ Update the ship's state. """
         
         # Handle turning.
+        
         self.angle += self.spin
         if self.angle >= 360:
             self.angle -= 360
@@ -315,8 +320,7 @@ class ScoreBoard(gui.Table):
         self._update()
         
     def _add_entry_no_update(self, name, score):
-        """ Add a player name and their score to this score board, without updating the score
-        board display. """
+        """ Add a player name and their score to this score board, without updating the display. """
         
         # Add the new entry.
         entry = self.Entry(name, score)
@@ -342,7 +346,7 @@ class ScoreBoard(gui.Table):
             self.td(gui.Label(str(entry.score), color=WHITE))
         
     def add_entry(self, name, score):
-        """ Add a player name and their score to this score board. """
+        """ Add a player name and their score to this score board and update the display. """
         
         self._add_entry_no_update(name, score)
         self._update()
@@ -393,13 +397,16 @@ class GameOverScreen(gui.Table):
         self.input.focus()
         
     def _submit_score(self):
+        """ Submit the player name and score to the score board. """
         
+        # Add the name and score to the score board.
         name = self.input.value
         score = self.game.get_score()
         
         self.score_board.add_entry(name, score)
         self.score_board.write(self.highscore_file)
         
+        # Start a new game.
         self.game.start_new()
         
         # Ensure that the input box is focused for next time.
