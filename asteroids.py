@@ -342,7 +342,7 @@ class ScoreBoard(gui.Table):
         # TODO: Formatting.
         for entry in self.entries:
             self.tr()
-            self.td(gui.Label(entry.name, color=WHITE))
+            self.td(gui.Label(entry.name + '    ', color=WHITE))
             self.td(gui.Label(str(entry.score), color=WHITE))
         
     def add_entry(self, name, score):
