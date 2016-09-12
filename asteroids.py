@@ -69,6 +69,21 @@ class Ship(pygame.sprite.Sprite):
         self.angle = 0
         self.spin = 0
         
+    def get_velocity(self):
+        """ Return the ship's velocity as a tuple. """
+
+        return (self.vx, self.vy)
+    
+    def get_center(self):
+        """ Return the position of the ship's center. """
+
+        return self.rect.center
+
+    def get_angle(self):
+        """ Return the ship's angle. """
+
+        return self.angle
+
     def start_turning_left(self):
         """ Start turning the ship left on updates. """
         
@@ -153,17 +168,18 @@ class Ship(pygame.sprite.Sprite):
     def shoot(self):
         """ Return a bullet fired by the ship. """
         
-        bullet = Bullet(self.rect.centerx, self.rect.centery, self.angle)
-        return bullet
+        return Bullet(self)
 
 class Bullet(pygame.sprite.Sprite):
     """ Represents a bullet fired by the player ship. """
     
-    def __init__(self, centerx, centery, angle):
+    def __init__(self, ship):
         """ Constructor. """
         
         pygame.sprite.Sprite.__init__(self)
         
+        angle = ship.get_angle()
+
         # Set up the image.
         image = pygame.Surface((8, 8))
         rect = image.get_rect()
@@ -172,7 +188,7 @@ class Bullet(pygame.sprite.Sprite):
         image = image.convert()
         
         self.image = image
-        self.rect = image.get_rect(centerx=centerx, centery=centery)
+        self.rect = image.get_rect(center=ship.get_center())
         
         # Used for determining if the bullet is off the screen.
         screen = pygame.display.get_surface()
@@ -185,8 +201,9 @@ class Bullet(pygame.sprite.Sprite):
         # Set up the bullet's velocity.
         radians = math.radians(angle)
         magnitude = 5
-        self.vx = magnitude * -math.sin(radians)
-        self.vy = magnitude * -math.cos(radians)
+        ship_vx, ship_vy = ship.get_velocity()
+        self.vx = ship_vx + magnitude * -math.sin(radians)
+        self.vy = ship_vy + magnitude * -math.cos(radians)
         
     def update(self):
         """ Update the bullet's state. """
