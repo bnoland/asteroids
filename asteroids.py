@@ -35,17 +35,22 @@ class Ship(pygame.sprite.Sprite):
                 (ship_width // 2 - 1, 0),
                 (ship_width - 1, ship_height - 1))
 
-        self.non_accel_image = pygame.Surface((ship_width, ship_height + flame_height))
+        self.non_accel_image = pygame.Surface(
+            (ship_width, ship_height + flame_height))
         pygame.draw.lines(self.non_accel_image, WHITE, True, ship, 1)
         self.non_accel_image = self.non_accel_image.convert()
 
-        # Set up the accelerating ship image (the non-accelerating image plus a booster flame).
+        # Set up the accelerating ship image (the non-accelerating image plus a
+        # booster flame).
 
-        flame = (((ship_width - flame_width) // 2 - 1, ship_height - 1),
-                  (ship_width // 2 - 1, ship_height + flame_height - 1),
-                  (ship_width - (ship_width - flame_width) // 2 - 1, ship_height - 1))
+        flame = (
+            ((ship_width - flame_width) // 2 - 1, ship_height - 1),
+            (ship_width // 2 - 1, ship_height + flame_height - 1),
+            (ship_width - (ship_width - flame_width) // 2 - 1, ship_height - 1)
+        )
 
-        self.accel_image = pygame.Surface((ship_width, ship_height + flame_height))
+        self.accel_image = pygame.Surface(
+            (ship_width, ship_height + flame_height))
         self.accel_image.blit(self.non_accel_image, (0, 0))
         pygame.draw.lines(self.accel_image, RED, False, flame, 1)
         self.accel_image = self.accel_image.convert()
@@ -243,8 +248,8 @@ class Asteroid(pygame.sprite.Sprite):
         screen = pygame.display.get_surface()
         self.screen_rect = screen.get_rect()
 
-        # Set up the velocity. I do it like this in order to avoid the possibility
-        # of a zero velocity along any axis.
+        # Set up the velocity. I do it like this in order to avoid the
+        # possibility of a zero velocity along any axis.
         velocities = list(range(1, 3)) + list(range(-3, -1))
         self.vx = random.choice(velocities)
         self.vy = random.choice(velocities)
@@ -282,7 +287,8 @@ class Asteroid(pygame.sprite.Sprite):
             self.rect.right = self.screen_rect.left
 
     def explode(self):
-        """ Return the new asteroids that result from this asteroid exploding. """
+        """ Return the new asteroids that result from this asteroid exploding.
+        """
 
         width = self.rect.w // 4
         height = self.rect.h // 4
@@ -327,7 +333,8 @@ class ScoreBoard(gui.Table):
         self.entries = []
         self.max_entries = max_entries
 
-        # If a filename is given, initialize the scoreboard with the contents of that file.
+        # If a filename is given, initialize the scoreboard with the contents of
+        # that file.
         if filename:
             with open(filename, 'r') as f:
                 lines = f.readlines()
@@ -339,7 +346,8 @@ class ScoreBoard(gui.Table):
         self._update()
 
     def _add_entry_no_update(self, name, score):
-        """ Add a player name and their score to this score board, without updating the display. """
+        """ Add a player name and their score to this score board, without
+        updating the display. """
 
         # Add the new entry.
         entry = self.Entry(name, score)
@@ -365,7 +373,8 @@ class ScoreBoard(gui.Table):
             self.td(gui.Label(str(entry.score), color=WHITE))
 
     def add_entry(self, name, score):
-        """ Add a player name and their score to this score board and update the display. """
+        """ Add a player name and their score to this score board and update the
+        display. """
 
         self._add_entry_no_update(name, score)
         self._update()
@@ -378,7 +387,8 @@ class ScoreBoard(gui.Table):
                 f.write(entry.name + '\t' + str(entry.score) + '\n')
 
 class GameOverScreen(gui.Table):
-    """ Represents the game over screen, to be shown when the player ship is killed. """
+    """ Represents the game over screen, to be shown when the player ship is
+    killed. """
 
     def __init__(self, game):
         """ Constructor. """
@@ -458,8 +468,8 @@ class Game:
         self.score = 0
 
         # Used to keep track of updates.
-        # TODO: Attributes can be added to functions in Python. Should this become an attribute
-        # of update()?
+        # TODO: Attributes can be added to functions in Python. Should this
+        # become an attribute of update()?
         self.update_count = 0
 
     def is_over(self):
@@ -473,8 +483,8 @@ class Game:
         return self.score
 
     def _add_random_asteroid(self):
-        """ Add a randomly generated asteroid to the screen. The asteroid will enter from the edge
-        of the screen. """
+        """ Add a randomly generated asteroid to the screen. The asteroid will
+        enter from the edge of the screen. """
 
         # Set up the asteroid dimensions.
         width = height = random.randint(10, 80)
@@ -542,17 +552,20 @@ class Game:
                 self.update_count = 0
 
         # Handle collisions between bullets and asteroids.
-        dead_asteroids = pygame.sprite.groupcollide(self.asteroids, self.bullets, True, True)
+        dead_asteroids = pygame.sprite.groupcollide(
+            self.asteroids, self.bullets, True, True)
 
         # Update the score and score display.
         self.score += len(dead_asteroids)
-        self.score_display = self.font.render('Score: ' + str(self.score), True, WHITE)
+        self.score_display = self.font.render(
+            'Score: ' + str(self.score), True, WHITE)
 
         for ast in dead_asteroids:
             self.asteroids.add(ast.explode())
 
         # Handle collisions between asteroids and the ship.
-        dead_asteroids = pygame.sprite.groupcollide(self.asteroids, self.ships, True, True)
+        dead_asteroids = pygame.sprite.groupcollide(
+            self.asteroids, self.ships, True, True)
 
         # Any asteroids hitting the ship?
         if len(dead_asteroids) > 0:
@@ -591,6 +604,7 @@ def main():
 
     # Initialize the display surface.
     screen = pygame.display.set_mode((600, 480))
+    #screen = pygame.display.set_mode((1024, 800))
     pygame.display.set_caption('Asteroids')
 
     clock = pygame.time.Clock()
