@@ -153,8 +153,8 @@ class Ship(pygame.sprite.Sprite):
 
         self.x += self.vx
         self.y += self.vy
-        self.rect.x = self.x
-        self.rect.y = self.y
+        self.rect.x = int(self.x)
+        self.rect.y = int(self.y)
 
         if not self.screen_rect.contains(self.rect):
             # Check if ship went off horizontal screen margins.
@@ -217,8 +217,8 @@ class Bullet(pygame.sprite.Sprite):
 
         self.x += self.vx
         self.y += self.vy
-        self.rect.x = self.x
-        self.rect.y = self.y
+        self.rect.x = int(self.x)
+        self.rect.y = int(self.y)
 
     def is_offscreen(self):
         """ Is the bullet offscreen? """
