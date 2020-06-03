@@ -12,6 +12,9 @@ import pygame
 from pygame.locals import *
 from pgu import gui
 
+# TODO: Add command-line debug option(s)?.
+DEBUG = False
+
 # Some useful color constants.
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -38,6 +41,12 @@ class Ship(pygame.sprite.Sprite):
         self.non_accel_image = pygame.Surface(
             (ship_width, ship_height + flame_height))
         pygame.draw.lines(self.non_accel_image, WHITE, True, ship, 1)
+
+        if DEBUG:
+            pygame.draw.rect(
+                self.non_accel_image, YELLOW,
+                self.non_accel_image.get_rect(), 1)
+
         self.non_accel_image = self.non_accel_image.convert()
 
         # Set up the accelerating ship image (the non-accelerating image plus a
@@ -53,6 +62,11 @@ class Ship(pygame.sprite.Sprite):
             (ship_width, ship_height + flame_height))
         self.accel_image.blit(self.non_accel_image, (0, 0))
         pygame.draw.lines(self.accel_image, RED, False, flame, 1)
+
+        if DEBUG:
+            pygame.draw.rect(
+                self.accel_image, YELLOW, self.accel_image.get_rect(), 1)
+
         self.accel_image = self.accel_image.convert()
 
         # Set up the initial ship image and bounding rectangle.
@@ -126,6 +140,11 @@ class Ship(pygame.sprite.Sprite):
     def update(self):
         """ Update the ship's state. """
 
+        if DEBUG:
+            # TODO: Better output formatting.
+            print('{0}, {1}'.format(self.rect.x, self.rect.y))
+            print('{0}, {1}'.format(self.x, self.y))
+
         # Handle turning.
 
         self.angle += self.spin
@@ -153,8 +172,8 @@ class Ship(pygame.sprite.Sprite):
 
         self.x += self.vx
         self.y += self.vy
-        self.rect.x = int(self.x)
-        self.rect.y = int(self.y)
+        self.rect.x = round(self.x)
+        self.rect.y = round(self.y)
 
         if not self.screen_rect.contains(self.rect):
             # Check if ship went off horizontal screen margins.
@@ -217,8 +236,8 @@ class Bullet(pygame.sprite.Sprite):
 
         self.x += self.vx
         self.y += self.vy
-        self.rect.x = int(self.x)
-        self.rect.y = int(self.y)
+        self.rect.x = round(self.x)
+        self.rect.y = round(self.y)
 
     def is_offscreen(self):
         """ Is the bullet offscreen? """
